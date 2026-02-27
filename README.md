@@ -1,7 +1,7 @@
 # dsa
 
-final year engineering student here. this repo is me going through data structures and algorithms from scratch in c. no frameworks, no libraries, no hand-holding. just raw c code, manual memory management, and a lot of segfaults along the way.
+final year engineering student here. this repo is me going through data structures and algorithms from scratch in c/cpp. no frameworks, no libraries, no hand-holding. just raw c/cpp code, manual memory management, and a lot of segfaults along the way.
 
-the goal is to actually understand how things work under the hood before i graduate and mass apply to jobs that ask me to reverse a linked list on a whiteboard.
+the goal is to actually understand how things work under the hood before i graduate and face interviews that ask me to reverse a linked list on a whiteboard.
 
-nothing fancy. just the fundamentals.
+nothing fancy. just the fundamentals..
