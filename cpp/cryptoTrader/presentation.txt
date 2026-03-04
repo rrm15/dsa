@@ -1,0 +1,234 @@
+
+================================================================================
+                     STACK vs HEAP MEMORY IN C++
+              Demonstrated through: Crypto Trader Application
+================================================================================
+
+
+1. WHAT IS MEMORY?
+==================
+
+  When your program runs, the OS gives it memory split into two regions:
+
+  +---------------------------------------------------+
+  |                   PROGRAM MEMORY                   |
+  |                                                    |
+  |   +---------------------+  +--------------------+ |
+  |   |       STACK          |  |       HEAP         | |
+  |   |                      |  |                    | |
+  |   |  Fast, automatic,    |  |  Slow, manual,     | |
+  |   |  fixed size          |  |  flexible size     | |
+  |   |                      |  |                    | |
+  |   |  Managed by:         |  |  Managed by:       | |
+  |   |  COMPILER            |  |  YOU (new/delete)  | |
+  |   +---------------------+  +--------------------+ |
+  +---------------------------------------------------+
+
+
+
+2. STACK MEMORY — The Shopping Cart
+====================================
+
+  In our app, the CART lives on the stack.  
+  It is a fixed-size array created inside the buyCoins() function.
+
+  When buyCoins() is called:
+  +--------------------------+
+  |  cart[4]  =  (empty)     |   <- top of stack (max 5 items)
+  |  cart[3]  =  (empty)     |
+  |  cart[2]  =  ElonBucks   |   <- cartTop = 2
+  |  cart[1]  =  DogeFather  |
+  |  cart[0]  =  TrumpCoin   |
+  +--------------------------+
+       STACK MEMORY
+
+  PUSH (add to cart):          POP (undo last item):
+  cartTop++                    cartTop--
+  cart[cartTop] = coin         item removed from top
+
+  KEY BEHAVIOR:
+  - Last In, First Out (LIFO)  
+  - When buyCoins() function ENDS, the cart is GONE
+  - You dont call delete. The compiler cleans it up.
+  - Fixed size: max 5 items. Try adding a 6th = STACK OVERFLOW
+
+  +---------------------+        +---------------------+
+  | buyCoins() called   |        | buyCoins() returns   |
+  |                     |        |                      |
+  |  cart exists here   |  --->  |  cart is DESTROYED   |
+  |  on the stack       |        |  automatically       |
+  +---------------------+        +---------------------+
+
+
+
+3. HEAP MEMORY — The Portfolio
+===============================
+
+  The PORTFOLIO lives on the heap.
+  It is created with "new" and must be destroyed with "delete".
+
+  Initially:
+  portfolio = NULL          (nothing allocated)
+  portfolioCapacity = 0
+  portfolioSize = 0
+
+  After buying first coin:                            
+  +------------------+                                
+  | portfolio        |---> [ TrumpCoin x1 | (empty) ] 
+  +------------------+     +-----------+-----------+  
+                           Heap Memory (2 slots)      
+
+  After buying 3rd coin (RESIZE happens):
+  
+  OLD (2 slots):                    NEW (4 slots):
+  [ TrumpCoin | DogeFather ]  --->  [ TrumpCoin | DogeFather | ElonBucks | (empty) ]
+        |                            +----------+-----------+-----------+----------+
+        v                                         Heap Memory (4 slots)
+     delete[] old
+     (freed)
+
+  RESIZE PROCESS:
+  1. Allocate new bigger array:     new Holding[4]
+  2. Copy old data to new array
+  3. Free old array:                delete[] old
+  4. Point portfolio to new array
+
+  KEY BEHAVIOR:
+  - Portfolio SURVIVES even after buyCoins() ends
+  - Only freed when YOU call delete[] 
+  - If you forget to delete = MEMORY LEAK
+  - Size grows dynamically: 0 -> 2 -> 4 -> 8 -> ...
+
+
+
+4. STACK vs HEAP — SIDE BY SIDE
+=================================
+
+  +--------------------+---------------------+
+  |      STACK         |       HEAP          |
+  +--------------------+---------------------+
+  | Cart               | Portfolio           |
+  +--------------------+---------------------+
+  | Fixed 5 slots      | Grows: 2, 4, 8...  |
+  +--------------------+---------------------+
+  | Created auto       | Created with "new"  |
+  +--------------------+---------------------+
+  | Destroyed auto     | Destroyed manually  |
+  | (function ends)    | (delete[])          |
+  +--------------------+---------------------+
+  | Super fast         | Slower (OS lookup)  |
+  +--------------------+---------------------+
+  | Risk: overflow     | Risk: memory leak   |
+  +--------------------+---------------------+
+
+
+
+5. WHAT HAPPENS WHEN THE PROGRAM RUNS?
+========================================
+
+  STEP 1: Start Program
+  +---STACK---+    +---HEAP---+    +---FILE---+
+  |  main()   |    | (empty)  |    | load     |
+  |  balance  |    |          |    | portfolio|
+  |  shop[]   |    |          |    | .txt     |
+  +-----------+    +----------+    +----------+
+
+  STEP 2: Buy Coins (buyCoins called)
+  +---STACK---+    +---HEAP---+
+  |  main()   |    | (empty)  |
+  |-----------|    |          |
+  | buyCoins()|    |          |
+  |  cart[5]  |    |          |   <- cart created on stack
+  |  cartTop  |    |          |
+  |  cartTotal|    |          |
+  +-----------+    +----------+
+
+  STEP 3: Confirm Purchase
+  +---STACK---+    +---HEAP-----------+
+  |  main()   |    | portfolio:       |
+  |-----------|    | [Trump|Doge]     |   <- coins moved to heap
+  | buyCoins()|    |                  |
+  |  cart=POP |    |                  |   <- cart being emptied
+  +-----------+    +------------------+
+
+  STEP 4: buyCoins() returns
+  +---STACK---+    +---HEAP-----------+
+  |  main()   |    | portfolio:       |
+  |           |    | [Trump|Doge]     |   <- STILL HERE
+  |           |    |                  |
+  |           |    |                  |   <- cart is GONE
+  +-----------+    +------------------+
+
+  STEP 5: Sell a coin
+  +---STACK---+    +---HEAP-----------+
+  |  main()   |    | portfolio:       |
+  |           |    | [Doge]           |   <- Trump deleted
+  |           |    |                  |
+  +-----------+    +------------------+
+
+  STEP 6: Exit
+  +---STACK---+    +---HEAP---+    +---FILE---+
+  | (cleaned  |    | delete[] |    | save     |
+  |  auto)    |    | (freed)  |    | portfolio|
+  +-----------+    +----------+    +----------+
+
+
+
+6. FILE I/O — WHY WE NEED IT
+==============================
+
+  Heap memory is tied to the running process.
+  When the .exe closes, ALL memory (stack AND heap) is gone.
+
+  To keep data across restarts, we save to disk:
+
+  Program Run 1:
+  [Buy coins] --> [Heap: Trump, Doge] --> [Save to portfolio.txt] --> [Exit]
+
+  Program Run 2:
+  [Start] --> [Read portfolio.txt] --> [Heap: Trump, Doge restored] --> [Continue]
+
+  portfolio.txt looks like:
+  +------------------+
+  | 700              |   <- balance
+  | 2                |   <- number of coins
+  | TrumpCoin        |   <- coin 1 name
+  | 1                |   <- coin 1 quantity
+  | 150              |   <- coin 1 price
+  | DogeFather       |   <- coin 2 name
+  | 1                |   <- coin 2 quantity 
+  | 50               |   <- coin 2 price
+  +------------------+
+
+
+
+7. CODE STRUCTURE
+==================
+
+  cryptoTrader.cpp
+  |
+  |-- struct Coin          (shop item: name, price, available)
+  |-- struct Holding       (portfolio item: name, qty, price)
+  |
+  |-- Global Variables
+  |     |-- shop[20]              STACK (fixed array)
+  |     |-- portfolio = NULL      HEAP  (dynamic, new/delete)
+  |     |-- balance               STACK
+  |
+  |-- Functions
+  |     |-- initShop()            fills shop with coins
+  |     |-- savePortfolio()       writes heap data to .txt
+  |     |-- loadPortfolio()       reads .txt into heap (new)
+  |     |-- showShop()            display shop
+  |     |-- showPortfolio()       display heap contents
+  |     |-- buyCoins()            STACK cart + HEAP portfolio
+  |     |-- sellCoin()            HEAP delete
+  |     |-- devMode()             add coins / add balance
+  |     |-- main()                menu loop
+  |
+  +-- portfolio.txt        saves heap data to survive restarts
+
+
+================================================================================
+                              END OF PRESENTATION
+================================================================================
